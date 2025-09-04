@@ -103,8 +103,8 @@ Prestashop::Client::Implementation.create 'IKWHFE1ZKMJAQAGRBZ2NKIJQRIIEQMKL', 'h
 begin
   available_references_csv = CSV.read("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").map { |(ref, desc, date_mod, currency, retail_price, discount_percent, discount_price, tariff, country, upc, brand)| [ref, brand] }
   available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read) rescue JSON.dump("{}")
-  available_references_csv_en = CSV.read("catalogue-front-runner-en-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").map { |(ref, desc, date_mod, currency, retail_price, discount_percent, discount_price, tariff, country, upc, brand)| [ref, brand] }
-  available_references_json_en = JSON.parse(File.open("catalogue-front-runner-en-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").read) rescue JSON.load(JSON.dump([{}]))
+  available_references_csv_en = CSV.read("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").map { |(ref, desc, date_mod, currency, retail_price, discount_percent, discount_price, tariff, country, upc, brand)| [ref, brand] }
+  available_references_json_en = JSON.parse(File.open("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").read) rescue JSON.load(JSON.dump([{}]))
 rescue CSV::MalformedCSVError => e
   Resend::Emails.send({
     "from": "tom@presta-smart.com",
