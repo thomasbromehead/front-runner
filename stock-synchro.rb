@@ -1007,12 +1007,11 @@ end
 begin
   [their_fr].each { |products| update_front_runner_products(products)}
   [front_runner_hash].each { |products| update_front_runner_products(products)}
-  # [their_fr].each { |products| update_front_runner_products(products)}
   [available_references_csv].each { |products| update_front_runner_products(products)}
   [new_fr].each { |products| create_front_runner_products(products, "FR")}
 rescue
 ensure
-  Dir["*.csv"]
+  [Dir["*.csv"], Dir["*.json"]].flatten.each { |f| FileUtils.rm(f)}
 end
 
 # [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
