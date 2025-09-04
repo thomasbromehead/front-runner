@@ -6,4 +6,5 @@ translate-remaining.rb
 translate_csv.rb
 
 *csv
+!refs-a-garder-front-runner.csv
 *.json
