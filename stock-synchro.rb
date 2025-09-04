@@ -96,6 +96,7 @@ def download_front_runner_catalogue(language)
 end
 
 download_front_runner_catalogue("FR")
+download_front_runner_catalogue("EN")
 Prestashop::Client::Implementation.create 'IKWHFE1ZKMJAQAGRBZ2NKIJQRIIEQMKL', 'https://www.montpellier4x4.com'
 
 # Download latest CSV
@@ -372,7 +373,7 @@ def translate_products(products, language)
   puts "STARTING TRANSLATION OF FRONT RUNNER PRODUCTS"
   begin
     available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
-    available_references_json_en = JSON.parse(File.open("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
+    available_references_json_en = JSON.parse(File.open("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
   rescue JSON::ParserError => e
     Resend::Emails.send({
       "from": "toto@presta-smart.com",
@@ -381,9 +382,9 @@ def translate_products(products, language)
       "html": "<p>#{e.message}</p>"
     })
     if e.message == "unexpected token at 'Too many requests'"
-      download_front_runner_catalogue(language, force: true)
+      # download_front_runner_catalogue(language, force: true)
       available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
-      available_references_json_en = JSON.parse(File.open("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
+      available_references_json_en = JSON.parse(File.open("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
     end
   end
   translated_products = 0
@@ -1003,11 +1004,17 @@ end
 # [[old_dometic, old_dometic_info, "Dometic"]].each do |products|
 #   delete_products(products[0], products[1], products[2]) 
 # end
-[their_fr].each { |products| update_front_runner_products(products)}
-[front_runner_hash].each { |products| update_front_runner_products(products)}
-# [their_fr].each { |products| update_front_runner_products(products)}
-[available_references_csv].each { |products| update_front_runner_products(products)}
-# [new_fr].each { |products| create_front_runner_products(products)} 
+begin
+  [their_fr].each { |products| update_front_runner_products(products)}
+  [front_runner_hash].each { |products| update_front_runner_products(products)}
+  # [their_fr].each { |products| update_front_runner_products(products)}
+  [available_references_csv].each { |products| update_front_runner_products(products)}
+  [new_fr].each { |products| create_front_runner_products(products, "FR")}
+rescue
+ensure
+  Dir["*.csv"]
+end
+
 # [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
 #  dometic_not_yet_on_site = Prestashop::Mapper::Product.all(filter: {id_category_default: 3031})
 # [dometic_not_yet_on_site].each { |products| translate_products(products, "EN")}
