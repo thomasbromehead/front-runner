@@ -506,7 +506,7 @@ def create_front_runner_products(new_products, language=nil, rephrase=nil)
       unless id_manufacturer
         # Send Warning Email that this manufacturer doesn't exist
         Resend::Emails.send({
-          "from": "toto@presta-smart.com",
+          "from": "tom@presta-smart.com",
           "to": "tom@tombrom.dev",
           "subject": "Une nouvelle marque est apparue au catalogue Front-Runner",
           "html":  "La marque #{build_args["brand"]} est nouvelle et doit être créée"
@@ -567,22 +567,13 @@ def create_front_runner_products(new_products, language=nil, rephrase=nil)
    text = ERB.new(<<-BLOCK).result(binding)
       <ul>#{new_product_info.join("<li>")}</ul>
     BLOCK
-    mail = Mail.new do
-      from    'lesalfistes@gmail.com'
-      to      'contact@montpellier4x4.com'
-      cc 'lesalfistes@gmail.com'
-      subject "Création et traduction en anglais de #{created_products} produits du catalogue #{brand}"
-    
-      text_part do
-        body "Produits crées, détail ci-dessous. Il faut maintenant les affecter aux bonnes catégories et \n sûrement revoir les noms car Front Runner ne fait pas beaucoup d'efforts pour traduire comme il faut ses produits..." + "\n" + text
-      end
-    
-      html_part do
-        content_type 'text/html; charset=UTF-8'
-        body "Produits crées, détail ci-dessous. Il faut maintenant les affecter aux bonnes catégories et sûrement revoir les noms <br> car Front Runner ne fait pas beaucoup d'efforts pour traduire comme il faut ses produits..." + "\n"+ "<br><br>" + text
-      end
-    end
-    # mail.deliver!
+    Resend::Emails.send({
+      "from": "tom@presta-smart.com",
+      "to": "tom@tombrom.dev",
+      "cc": "contact@montpellier4x4.com",
+      "subject": "Résumé de la création de produits Front-Runner",
+      "html":  text
+    })
   end
 
 end
@@ -591,7 +582,6 @@ end
 # [new_cadac].each { |products| create_products(products)} 
 
 def update_front_runner_products(products)
-  binding.irb
   download_front_runner_catalogue("FR")
   available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
   stock = CSV.read("stock-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
@@ -675,7 +665,6 @@ def update_front_runner_products(products)
             end
           end
         end
-        
         Prestashop::Mapper::Product.update(product_id, ean13: product_hash["UPC"])  unless our_product_info[:ean13].to_s == product_hash["UPC"]
       rescue NoMethodError
       rescue Prestashop::Api::RequestFailed => e
@@ -698,24 +687,14 @@ def update_front_runner_products(products)
       end
     end
   end
-
   if updated_products > 1
-    mail = Mail.new do
-      from    'lesalfistes@gmail.com'
-      to      'tom@montpellier4x4.com'
-      cc 't_bromehead@yahoo.fr'
-      subject "MAJ #{brand}: #{updated_products} quantités/prix/poids/UPC ou descriptions modifié(e)s"
-    
-      text_part do
-        body "#{updated_products} articles du catalogue Front-Runner ont été mis à jour"
-      end
-    
-      html_part do
-        content_type 'text/html; charset=UTF-8'
-        body "<h2>#{updated_products} articles du catalogue Front-Runner ont été mis à jour</h2>"
-      end
-    end
-    mail.deliver!
+    Resend::Emails.send({
+      "from": "tom@presta-smart.com",
+      "to": "tom@tombrom.dev",
+      "cc": "t_bromehead@yahoo.fr",
+      "subject": "MAJ #{brand}: #{updated_products} quantités/prix/poids/UPC ou descriptions modifié(e)s",
+      "html":  "<h2>#{updated_products} articles du catalogue Front-Runner ont été mis à jour</h2>"
+    })
   end
 end
 
@@ -763,13 +742,13 @@ def update_arb_products(products)
       updated = false
       begin 
         # Check price and update if different
-        # fr_price = product_hash["RetailPrice"].to_f 
-        # our_price = product_info[:price].to_f
-        # unless fr_price == our_price
-        #   update = Prestashop::Mapper::Product.update(product_id, price: fr_price)
-        #   updated = true
-        #   updated_products += 1 if update.is_a?(Hash)
-        # end
+        fr_price = product_hash["RetailPrice"].to_f 
+        our_price = product_info[:price].to_f
+        unless fr_price == our_price
+          update = Prestashop::Mapper::Product.update(product_id, price: fr_price)
+          updated = true
+          updated_products += 1 if update.is_a?(Hash)
+        end
         weight = product_info[:weight].to_f
         puts "PRODUCT WEIGHT IS: #{weight}"
         if weight.zero? || weight != product_hash[1]["weight"]
@@ -883,132 +862,13 @@ def create_b2b_categories
   # Map them
 end
 
-# def create_trans4_products(new_products)
-#   created_products = 0
-#   return if new_products.length < 1
-#   updated_products = 0
-#   new_product_info = []
-#   brand  = ""
-#   new_products.each do |ref|
-#     build_args = Hash.new
-#     # Look up product in JSON Hash
-#     product_hash = available_references_json.find { |p| p["Code"] == ref }
-#     next unless product_hash
-#     # Check whether the product exits
-#     build_args["reference"] = product_hash["Code"]
-#     build_args["name"] = product_hash["Description"]
-#     build_args["price"] = product_hash["RetailPrice"].to_i
-#     build_args["upc"] = product_hash["UPC"].length < 13 ? product_hash["UPC"] : "" 
-#     build_args["brand"] = product_hash["Brand"]
-#     brand = build_args["brand"]
-#     build_args["description_short"] = product_hash["Narration"]
-#     build_args["description"] = product_hash["LongDescription"] + "\n\n" + product_hash["Specification"]
-#     build_args["meta_title"] = "Montpellier4x4 vous propose le " + product_hash["Description"]
-#     build_args["weight"] = product_hash["Weight_kg"]
-#     build_args["meta_description"] = product_hash["Narration"][0...200]
-#     build_args["available_for_order"], build_args["available_now"] = 1, 1
-#     build_args["id_tax_rules_group"] = 9
-#     build_args["show_price"] = 1
-#     product = Prestashop::Mapper::Product.find_by(filter: {reference: build_args["reference"]})
-#     puts "Product #{product} found " if product
-#     unless product
-#       # # Get id or English language
-#       # Set defaults for product
-#       id_lang = Prestashop::Mapper::Language.find_by_iso_code('fr')
-#       build_args["id_lang"] = id_lang
-#       id_manufacturer = Prestashop::Mapper::Manufacturer.find_by( filter: {name: build_args["brand"]}) rescue nil
-#       unless id_manufacturer
-#         # Send Warning Email that this manufacturer doesn't exist
-#         # 
-#       end
-#       build_args.merge!({id_lang: id_lang, id_manufacturer: id_manufacturer})
-#       cat_name = "#{Date.today.day} #{Date::MONTHNAMES[Date.today.month]} #{Date.today.year} Import #{build_args["brand"]}"
-#       category_id = Prestashop::Mapper::Category.find_by(filter: { name: cat_name })
-#       unless category_id
-#         category = Prestashop::Mapper::Category.new({name: cat_name, id_lang: id_lang, link_rewrite: cat_name, active: 0})
-#         new_cat = category.create
-#         category_id = new_cat[:id]
-#       end
-#       build_args["available_for_order"], build_args["available_now"] = 1, 1
-#       build_args["id_category_default"] = category_id
-#       # Find weight attribute
-#       weight = Prestashop::Mapper::ProductFeature.find_in_cache("Poids", id_lang)
-#       weight_value = Prestashop::Mapper::ProductFeatureValue.find_in_cache(weight[:id], build_args["weight"], id_lang)
-#       unless weight_value
-#         temp_weight_value = Prestashop::Mapper::ProductFeatureValue.new(id_feature: weight[:id], value: build_args["weight"].to_s, id_lang: id_lang)
-#         weight_value = temp_weight_value.create
-#       end
-#       build_args["id_features"] = [
-#         ActiveSupport::HashWithIndifferentAccess.new({id_feature: weight[:id], id_feature_value: weight_value[:id]})
-#       ]
-#       draft_product = Prestashop::Mapper::Product.new(build_args)
-#       begin
-#         new_product = draft_product.create
-#       rescue Prestashop::Api::RequestFailed => e
-#         # Email error message
-#         puts e.message
-#       end
-#       if new_product[:id]
-#         info = "#{new_product[:id]}: #{}"
-#         new_product_info  << info
-#         puts "Product #{new_product[:name]} has been created"
-#         created_products += 1
-#         Prestashop::Mapper::Product.update(new_product[:id], state: 1, active: 1)
-#         # Upload images:
-#         (1..8).each do |n|
-#           image = Prestashop::Mapper::Image.new(resource: :products, id_resource: new_product[:id], source: product_hash["Image_#{n}"])
-#           if image
-#             puts "Uploading image for product #{new_product[:id]}"
-#             begin
-#               uploaded = image.upload
-#             rescue Prestashop::Api::RequestFailed
-#             end
-#           end
-#         end
-#       else
-#         puts "Skipping this product, already exists"
-#         # Product already exists
-#         next
-#       end
-#     end
-#   end
-#   if created_products >= 1
-#     # mail = Mail.new do
-#     #   from    'lesalfistes@gmail.com'
-#     #   to      'tom@montpellier4x4.com'
-#     #   cc 'lesalfistes@gmail.com'
-#     #   subject "Création de #{created_products} produits du catalogue #{brand}"
-    
-#     #   text_part do
-#     #     body ""
-#     #   end
-    
-#     #   html_part do
-#     #     content_type 'text/html; charset=UTF-8'
-#     #     body "Produits dans "
-#     #   end
-#     # end
-#     # mail.deliver!
-#     translate_products(new_products)
-#   end
-
-# end
-
-
-# update_arb_products(our_arb)
-# [cadac_hash].each { |products| update_products(products)}
-
-# [[old_fr, old_fr_info, "Front Runner"]].each do |products|
-#   delete_products(products[0], products[1], products[2]) 
-# end
-# [[old_dometic, old_dometic_info, "Dometic"]].each do |products|
-#   delete_products(products[0], products[1], products[2]) 
-# end
 begin
   [their_fr].each { |products| update_front_runner_products(products)}
+  [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
   [front_runner_hash].each { |products| update_front_runner_products(products)}
   [available_references_csv].each { |products| update_front_runner_products(products)}
   [new_fr].each { |products| create_front_runner_products(products, "FR")}
+  puts "SCRIPT RAN TODAY: #{Date.today.day} #{Date::MONTHNAMES[Date.today.month]} #{Date.today.year}"
 rescue
 ensure
   [Dir["*.csv"], Dir["*.json"]].flatten.each { |f| FileUtils.rm(f)}
@@ -1019,7 +879,3 @@ end
 # [dometic_not_yet_on_site].each { |products| translate_products(products, "EN")}
 # [front_runner_hash].each { |products| translate_products(products)}
 # [petromax_hash].each { |products| translate_products(products)}
-# 
-# Update state or product for it to be displayed, for some reason it's not in the creation XML
-
-# create_b2b_categories
