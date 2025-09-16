@@ -870,7 +870,7 @@ begin
   [new_fr].each { |products| create_front_runner_products(products, "FR")}
   puts "SCRIPT RAN TODAY: #{Date.today.day} #{Date::MONTHNAMES[Date.today.month]} #{Date.today.year}"
 rescue StandardError => e
-  Resend::Email.send({
+  Resend::Emails.send({
     "from": "tom@presta-smart.com",
     "to": "tom@tombrom.dev",
     "cc": "t_bromehead@yahoo.fr",
