@@ -84,26 +84,26 @@ end
 # `curl -L "#{JSON_URL}" -o 'catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json'` unless File.exist?("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json")
 
 def download_front_runner_catalogue(language)
-  Object.const_set("CSV_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=csv&language=#{language}&nonStandardColumns=dimensions&nonStandardColumns=bom&nonStandardColumns=narrative&nonStandardColumns=images")
+  Object.const_set("CSV_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=csv&language=#{language}&nonStandardColumns=dimensions&nonStandardColumns=categories&nonStandardColumns=bom&nonStandardColumns=narrative&nonStandardColumns=images")
   csv_url = Object.const_get("CSV_URL_#{language}")
-  Object.const_set("JSON_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=json&language=EN&nonStandardColumns=dimensions&nonStandardColumns=categories&nonStandardColumns=narrative&nonStandardColumns=images")
+  Object.const_set("JSON_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=json&language=#{language}&nonStandardColumns=dimensions&nonStandardColumns=categories&nonStandardColumns=bom&nonStandardColumns=narrative&nonStandardColumns=images")
   json_url = Object.const_get("JSON_URL_#{language}")
-  Object.const_set("JSON_STOCK_URL_#{language}", "https://api.frontrunner.co.za/customer/Edi/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=csv")
-  json_stock_url = Object.const_get("JSON_STOCK_URL_#{language}")
+  Object.const_set("JSON_STOCK_URL", "https://api.frontrunner.co.za/customer/Edi/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=csv")
+  csv_stock_url = Object.const_get("JSON_STOCK_URL")
   `curl -L "#{csv_url}" -o 'catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv'` unless File.exist?("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
   `curl -L "#{json_url}" -o 'catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json'` unless File.exist?("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json")
-  `curl -L "#{json_stock_url}" -o 'stock-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv'` unless File.exist?("stock-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
+  `curl -L "#{csv_stock_url}" -o 'stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv'` unless File.exist?("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
 end
 
 download_front_runner_catalogue("FR")
 download_front_runner_catalogue("EN")
-Prestashop::Client::Implementation.create 'IKWHFE1ZKMJAQAGRBZ2NKIJQRIIEQMKL', 'https://www.montpellier4x4.com'
+Prestashop::Client::Implementation.create ENV["WEBSERVICE_KEY"], 'https://www.montpellier4x4.com'
 
 # Download latest CSV
 begin
   available_references_csv = CSV.read("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").map { |(ref, desc, date_mod, currency, retail_price, discount_percent, discount_price, tariff, country, upc, brand)| [ref, brand] }
   available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read) rescue JSON.dump("{}")
-  available_references_csv_en = CSV.read("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").map { |(ref, desc, date_mod, currency, retail_price, discount_percent, discount_price, tariff, country, upc, brand)| [ref, brand] }
+  # available_references_csv_en = CSV.read("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").map { |(ref, desc, date_mod, currency, retail_price, discount_percent, discount_price, tariff, country, upc, brand)| [ref, brand] } rescue ""
   available_references_json_en = JSON.parse(File.open("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv").read) rescue JSON.load(JSON.dump([{}]))
 rescue CSV::MalformedCSVError => e
   Resend::Emails.send({
@@ -264,7 +264,7 @@ def optimize(text, desc_type)
   rescue => e
     puts "ChatGPT Failure: #{e.message}"
     Resend::Emails.send({
-      "from": "toto@presta-smart.com",
+      "from": "tom@presta-smart.com",
       "to": "tom@tombrom.dev",
       "subject": "Erreur dans la méthode optimize impliquant chatGPT",
       "html":  e.message
@@ -372,11 +372,11 @@ end
 def translate_products(products, language)
   puts "STARTING TRANSLATION OF FRONT RUNNER PRODUCTS"
   begin
-    available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
-    available_references_json_en = JSON.parse(File.open("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
+    # available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
+    # available_references_json_en = JSON.parse(File.open("catalogue-front-runner-EN-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read) rescue 
   rescue JSON::ParserError => e
     Resend::Emails.send({
-      "from": "toto@presta-smart.com",
+      "from": "tom@presta-smart.com",
       "to": "tom@tombrom.dev",
       "subject": "Error parsing Front Runner catalogue",
       "html": "<p>#{e.message}</p>"
@@ -584,7 +584,7 @@ end
 def update_front_runner_products(products)
   download_front_runner_catalogue("FR")
   available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
-  stock = CSV.read("stock-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
+  stock = CSV.read("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
   .map { |linecode, sku, mpn, upc, corecost, cost, l1, l2, l3, stock, eta, manufactured, leadtime| [sku, stock] }
   updated_products = 0
   brand = ""
@@ -869,9 +869,21 @@ begin
   [available_references_csv].each { |products| update_front_runner_products(products)}
   [new_fr].each { |products| create_front_runner_products(products, "FR")}
   puts "SCRIPT RAN TODAY: #{Date.today.day} #{Date::MONTHNAMES[Date.today.month]} #{Date.today.year}"
-rescue
+rescue StandardError => e
+  Resend::Email.send({
+    "from": "tom@presta-smart.com",
+    "to": "tom@tombrom.dev",
+    "cc": "t_bromehead@yahoo.fr",
+    "subject": "Erreur lors de la MAJ Front-Runner",
+    "html":  "<h2>Il s'est passé ceci: #{e.message}</h2>",
+    "text": e.message
+  })
 ensure
-  [Dir["*.csv"], Dir["*.json"]].flatten.each { |f| FileUtils.rm(f)}
+  [Dir["*.csv"], Dir["*.json"]].flatten.each do|f| 
+    unless f == "refs-a-garder-front-runner.csv"
+      FileUtils.rm(f)
+    end
+  end
 end
 
 # [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
