@@ -109,6 +109,7 @@ rescue CSV::MalformedCSVError => e
   Resend::Emails.send({
     "from": "tom@presta-smart.com",
     "to": "tom@tombrom.dev",
+    "cc": "contact@montpellier4x4.com"
     "subject": "Erreur en lisant les CSVs Front-Runner",
     "html":  e.message
   })
@@ -266,6 +267,7 @@ def optimize(text, desc_type)
     Resend::Emails.send({
       "from": "tom@presta-smart.com",
       "to": "tom@tombrom.dev",
+      "cc": "contact@montpellier4x4.com",
       "subject": "Erreur dans la méthode optimize impliquant chatGPT",
       "html":  e.message
     })
@@ -343,6 +345,7 @@ def delete_products(products, product_info, brand)
     Resend::Emails.send({
       "from": "toto@presta-smart.com",
       "to": "tom@tombrom.dev",
+      "cc": "contact@montpellier4x4.com",
       "subject": "#{deleted_products} produits du catalogue #{brand} sont à supprimer.",
       "html":  "Vous pouvez les retrouver dans la catégorie 'A supprimer' à la racine" + text
     })
