@@ -7,7 +7,7 @@ require "erb"
 require "resend"
 require "dotenv"
 require "chatgpt"
-
+require "date"
 
 Dotenv.load
 # require_relative "deleter"
@@ -867,10 +867,12 @@ end
 
 begin
   [their_fr].each { |products| update_front_runner_products(products)}
-  [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
+  if Date.today.day == 24
+    [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
+    [new_fr].each { |products| create_front_runner_products(products, "FR")}
+  end
   [front_runner_hash].each { |products| update_front_runner_products(products)}
   [available_references_csv].each { |products| update_front_runner_products(products)}
-  [new_fr].each { |products| create_front_runner_products(products, "FR")}
   puts "SCRIPT RAN TODAY: #{Date.today.day} #{Date::MONTHNAMES[Date.today.month]} #{Date.today.year}"
 rescue StandardError => e
   Resend::Emails.send({
