@@ -439,8 +439,8 @@ def translate_products(products, language)
       rescue NoMethodError => e
         mail = Mail.new do
           from    'lesalfistes@gmail.com'
-          to      't_bromehead@yahoo.fr'
-          cc 't_bromehead@yahoo.fr'
+          to      'contact@montpellier4x4.com'
+          cc 'contact@montpellier4x4.com'
           subject "MAJ Petromax: Erreur lors de la mise à jour de #{product["Name"]}"
         
           text_part do
@@ -460,7 +460,7 @@ def translate_products(products, language)
     mail = Mail.new do
       from    'informatique@montpellier4x4.com'
       to      'contact@montpellier4x4?.com'
-      cc 't_bromehead@yahoo.fr'
+      cc 'contact@montpellier4x4.com'
       subject "MAJ Catalogue Front Runner: #{translated_products} produits ont été traduits en Anglais"
     end
     mail.deliver!
@@ -673,7 +673,7 @@ def update_front_runner_products(products)
       rescue Prestashop::Api::RequestFailed => e
         mail = Mail.new do
           from    'lesalfistes@gmail.com'
-          to      't_bromehead@yahoo.fr'
+          to      'contact@montpellier4x4.com'
           cc 'lesalfistes@gmail.com '
           subject "Erreur de modification de l'article #{product_id}"
         
@@ -694,7 +694,7 @@ def update_front_runner_products(products)
     Resend::Emails.send({
       "from": "tom@presta-smart.com",
       "to": "tom@tombrom.dev",
-      "cc": "t_bromehead@yahoo.fr",
+      "cc": "contact@montpellier4x4.com",
       "subject": "MAJ #{brand}: #{updated_products} quantités/prix/poids/UPC ou descriptions modifié(e)s",
       "html":  "<h2>#{updated_products} articles du catalogue Front-Runner ont été mis à jour</h2>"
     })
@@ -805,7 +805,7 @@ def update_arb_products(products)
       rescue Prestashop::Api::RequestFailed => e
         mail = Mail.new do
           from    'lesalfistes@gmail.com'
-          to      't_bromehead@yahoo.fr'
+          to      'contact@montpellier4x4.com'
           cc 'lesalfistes@gmail.com '
           subject "Erreur de modification de l'article #{product_id}"
         
@@ -826,7 +826,7 @@ def update_arb_products(products)
     mail = Mail.new do
       from    'lesalfistes@gmail.com'
       to      'tom@montpellier4x4.com'
-      cc 't_bromehead@yahoo.fr'
+      cc 'contact@montpellier4x4.com'
       subject "MAJ ARB: #{updated_products} produits modifiés"
     
       text_part do
@@ -878,7 +878,7 @@ rescue StandardError => e
   Resend::Emails.send({
     "from": "tom@presta-smart.com",
     "to": "tom@tombrom.dev",
-    "cc": "t_bromehead@yahoo.fr",
+    "cc": "contact@montpellier4x4.com",
     "subject": "Erreur lors de la MAJ Front-Runner",
     "html":  "<h2>Il s'est passé ceci: #{e.message}</h2>",
     "text": e.message
