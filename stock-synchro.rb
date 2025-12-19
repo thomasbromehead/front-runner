@@ -84,19 +84,20 @@ end
 # `curl -L "#{JSON_URL}" -o 'catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json'` unless File.exist?("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json")
 
 def download_front_runner_catalogue(language)
-  Object.const_set("CSV_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=csv&language=#{language}&nonStandardColumns=dimensions&nonStandardColumns=categories&nonStandardColumns=bom&nonStandardColumns=narrative&nonStandardColumns=images")
+  Object.const_set("CSV_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR/?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=CSV&language=#{language}&nonStandardColumns=Images&nonStandardColumns=Bom&nonStandardColumns=FittingInstructions&nonStandardColumns=Narrative&nonStandardColumns=Categories&nonStandardColumns=Dimensions")
   csv_url = Object.const_get("CSV_URL_#{language}")
-  Object.const_set("JSON_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=json&language=#{language}&nonStandardColumns=dimensions&nonStandardColumns=categories&nonStandardColumns=bom&nonStandardColumns=narrative&nonStandardColumns=images")
+  Object.const_set("JSON_URL_#{language}", "https://api.frontrunner.co.za/customer/Pricelist/file/EUR/?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=JSON&language=#{language}&nonStandardColumns=Images&nonStandardColumns=Bom&nonStandardColumns=FittingInstructions&nonStandardColumns=Narrative&nonStandardColumns=Categories&nonStandardColumns=Dimensions")
   json_url = Object.const_get("JSON_URL_#{language}")
-  Object.const_set("JSON_STOCK_URL", "https://api.frontrunner.co.za/customer/Edi/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&format=csv")
-  csv_stock_url = Object.const_get("JSON_STOCK_URL")
-  `curl -L "#{csv_url}" -o 'catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv'` unless File.exist?("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
-  `curl -L "#{json_url}" -o 'catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json'` unless File.exist?("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json")
-  `curl -L "#{csv_stock_url}" -o 'stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv'` unless File.exist?("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
+  Object.const_set("JSON_STOCK_URL", "https://api.frontrunner.co.za/customer/Edi/EUR?account=DMON802&ApiKey=6bbb3bd79df745fda029b2ff16957c54&language=FR&format=JSON")
+  json_stock_url = Object.const_get("JSON_STOCK_URL")
+  `curl "#{csv_url}" -o 'catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv'` unless File.exist?("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
+  `curl "#{json_url}" -o 'catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json'` unless File.exist?("catalogue-front-runner-#{language}-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json")
+  `curl "#{json_stock_url}" -o 'stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json'` unless File.exist?("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json")
 end
 
 download_front_runner_catalogue("FR")
-download_front_runner_catalogue("EN")
+# binding.irb
+# download_front_runner_catalogue("EN")
 Prestashop::Client::Implementation.create ENV["WEBSERVICE_KEY"], 'https://www.montpellier4x4.com'
 
 # Download latest CSV
@@ -109,24 +110,24 @@ rescue CSV::MalformedCSVError => e
   Resend::Emails.send({
     "from": "tom@presta-smart.com",
     "to": "tom@tombrom.dev",
-    "cc": "contact@montpellier4x4.com"
+    "cc": "contact@montpellier4x4.com",
     "subject": "Erreur en lisant les CSVs Front-Runner",
     "html":  e.message
   })
   raise e
 end
 dometic = available_references_csv.partition { |product| product[1] == "Dometic" }
-their_dometic = dometic[0].map  {|p| p[0]}
+their_dometic = dometic[1].map  {|p| p[0]}
 puts "There are #{their_dometic.length} Dometic products in the current Front Runner catalogue"
 our_dometic = Prestashop::Mapper::Product.all(filter: { id_manufacturer: 95}, display: '[reference]').map { |h| h[:reference] } 
 puts "We have #{our_dometic.length} Dometic products on our site" 
 cadac = available_references_csv.partition { |product| product[1] == "CADAC" }
 new_dometic = their_dometic - our_dometic
 other = available_references_csv.partition { |product| product[1] == "Other" } 
-new_other = other[0].map  {|p| p[0]}
+new_other = other[1].map  {|p| p[0]}
 our_petromax = Prestashop::Mapper::Product.all(filter: { id_manufacturer: 116}, display: '[reference]').map { |h| h[:reference] }
 petromax = available_references_csv.partition { |product| product[1] == "Petromax" }
-their_petromax = petromax[0].map  {|p| p[0]}
+their_petromax = petromax[1].map  {|p| p[0]}
 old_dometic = our_dometic - their_dometic
 old_dometic.reject! { |product| references_to_keep_no_correspondance.include?(product) }
 old_dometic_info = []
@@ -175,7 +176,7 @@ end
 
 # FRONT RUNNER
 front_runner = available_references_csv.partition { |product| product[1] == "Front Runner" }
-their_fr = front_runner[0].map {|p| p[0]}
+their_fr = front_runner[1].map {|p| p[0]}
 puts "There are #{their_fr.length} Front Runner products in the current Front Runner catalogue"
 our_fr = Prestashop::Mapper::Product.all(filter: { id_manufacturer: 3}, display: '[reference]').map { |h| h[:reference] } rescue []
 puts "We have #{our_fr.length} Front Runner products on our site" 
@@ -342,13 +343,13 @@ def delete_products(products, product_info, brand)
     text = ERB.new(<<-BLOCK).result(binding)
       <ul>#{product_info.join("<li>")}</ul>
     BLOCK
-    Resend::Emails.send({
-      "from": "toto@presta-smart.com",
-      "to": "tom@tombrom.dev",
-      "cc": "contact@montpellier4x4.com",
-      "subject": "#{deleted_products} produits du catalogue #{brand} sont à supprimer.",
-      "html":  "Vous pouvez les retrouver dans la catégorie 'A supprimer' à la racine" + text
-    })
+    # Resend::Emails.send({
+    #   "from": "toto@presta-smart.com",
+    #   "to": "tom@tombrom.dev",
+    #   "cc": "contact@montpellier4x4.com",
+    #   "subject": "#{deleted_products} produits du catalogue #{brand} sont à supprimer.",
+    #   "html":  "Vous pouvez les retrouver dans la catégorie 'A supprimer' à la racine" + text
+    # })
     # mail = Mail.new do
     #   from    'lesalfistes@gmail.com'
     #   to      'tom@montpellier4x4.com'
@@ -570,13 +571,13 @@ def create_front_runner_products(new_products, language=nil, rephrase=nil)
    text = ERB.new(<<-BLOCK).result(binding)
       <ul>#{new_product_info.join("<li>")}</ul>
     BLOCK
-    Resend::Emails.send({
-      "from": "tom@presta-smart.com",
-      "to": "tom@tombrom.dev",
-      "cc": "contact@montpellier4x4.com",
-      "subject": "Résumé de la création de produits Front-Runner",
-      "html":  text
-    })
+    # Resend::Emails.send({
+    #   "from": "tom@presta-smart.com",
+    #   "to": "tom@tombrom.dev",
+    #   "cc": "contact@montpellier4x4.com",
+    #   "subject": "Résumé de la création de produits Front-Runner",
+    #   "html":  text
+    # })
   end
 
 end
@@ -585,10 +586,11 @@ end
 # [new_cadac].each { |products| create_products(products)} 
 
 def update_front_runner_products(products)
-  download_front_runner_catalogue("FR")
+  # download_front_runner_catalogue("FR")
   available_references_json = JSON.parse(File.open("catalogue-front-runner-FR-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
-  stock = CSV.read("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
-  .map { |linecode, sku, mpn, upc, corecost, cost, l1, l2, l3, stock, eta, manufactured, leadtime| [sku, stock] }
+  # stock = CSV.read("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.csv")
+  # .map { |linecode, sku, mpn, upc, corecost, cost, l1, l2, l3, stock, eta, manufactured, leadtime| [sku, stock] }
+  stock = JSON.parse(File.open("stock-front-runner-#{Time.now.day}-#{Time.now.month}-#{Time.now.year}.json").read)
   updated_products = 0
   brand = ""
   # We are looking for products via id_manufacturer = 3, some are already on the site but don't have that.
@@ -655,7 +657,7 @@ def update_front_runner_products(products)
         stock_available_id = Prestashop::Mapper::StockAvailable.find_by(filter: {id_product: product_id})
         if stock_available_id
           stock_available_object = Prestashop::Mapper::StockAvailable.find(stock_available_id)
-          their_quantity_object = stock.find {|p| p[0] == product } rescue nil
+          their_quantity_object = stock.find {|p| p["lineCode"] == product } rescue nil
           if their_quantity_object
             their_quantity = their_quantity_object[1].to_i 
             unless their_quantity == stock_available_object[:quantity]
@@ -703,145 +705,145 @@ end
 
 # our_arb = Prestashop::Mapper::Product.all(filter: { id_manufacturer: 7}, display: '[reference]').map { |h| h[:reference] } 
 
-def update_arb_products(products)
-  csv_arb = CSV.read("arb.csv").map { |(ref, rrp, desc, gtin, brand, sub_brand, weight, width_cm, depth_cm, length_cm, retail, images, attributes)| [ref, gtin, weight, width_cm, depth_cm, length_cm] }
-  available_references_json = JSON.parse(File.open("arb.json").read)
-  updated_products = 0
-  found_products = 0
-  json_arb = Hash.new
-  csv_arb.shift
-  csv_arb.each do |product|
-    json_arb[product[0]] = {"gtin": product[1], "weight": product[2], "width": product[3], "depth": product[4], "length": product[5] }
-  end
-  FileUtils.touch("arb.json")
-  File.open("arb.json", "w+") do |file|
-    file.write(JSON.dump(json_arb))
-  end
-  products = products.map{|p| p.to_s }
-  products.each do |product|
-    product_hash = available_references_json.find do |p| 
-      p[0] == product 
-    end
-    if product_hash.nil?
-      product_hash = available_references_json.find do |p| 
-        p[0].sub!("ARB-","") == product rescue nil
-      end
-    end
-    if product_hash.nil?
-      puts "#{product} is not in our system, might have to consider creating it"
-      next
-    else
-      puts "Found product #{product}"
-    end
-    # Get id
-    product_id = Prestashop::Mapper::Product.find_by(filter: {reference: product})
-    puts "PRODUCT REF IS: #{product}"
-    if product_id
-      found_products += 1
-    end
-    if product_id
-      # Get product info
-      product_info = Prestashop::Mapper::Product.find(product_id)
-      updated = false
-      begin 
-        # Check price and update if different
-        fr_price = product_hash["RetailPrice"].to_f 
-        our_price = product_info[:price].to_f
-        unless fr_price == our_price
-          update = Prestashop::Mapper::Product.update(product_id, price: fr_price)
-          updated = true
-          updated_products += 1 if update.is_a?(Hash)
-        end
-        weight = product_info[:weight].to_f
-        puts "PRODUCT WEIGHT IS: #{weight}"
-        if weight.zero? || weight != product_hash[1]["weight"]
-          new_weight = product_hash[1]["weight"].to_f
-          puts "Weight was #{weight} and will now be #{new_weight}" unless product_hash[1]["weight"].to_f == 0
-          update = Prestashop::Mapper::Product.update(product_id, weight: new_weight) unless product_hash[1]["weight"].to_f == 0
-          if update.is_a?(Hash) && ! updated
-            updated_products += 1
-            updated = true
-          end
-        end
-        if product_info[:ean13].empty? || product_info[:ean13] != product_hash[1]["gtin"]
-          update = Prestashop::Mapper::Product.update(product_id, ean13: product_hash[1]["gtin"]) if !product_hash[1]["gtin"].empty?
-          puts "Updated EAN info: was #{product_info[:ean13]}, will be #{product_hash[1]["gtin"]}"
-          if update.is_a?(Hash) && ! updated
-            updated_products += 1
-            updated = true
-          end
-          puts "Updated EAN13"
-        end
-        if product_info[:width].to_f.zero? || product_info[:width] != product_hash[1]["width"]
-          update = Prestashop::Mapper::Product.update(product_id, width: product_hash[1]["width"]) if !product_hash[1]["width"].to_f.zero?
-          puts "Updating width, was #{product_info[:width]}, will be #{product_hash[1]["width"]}"
-          if update.is_a?(Hash) && ! updated
-            updated_products += 1
-            updated = true
-          end
-        end
-        if product_info[:depth].to_f.zero? || product_info[:length] != product_hash[1]["length"]
-          update = Prestashop::Mapper::Product.update(product_id, depth: product_hash[1]["length"]) if !product_hash[1]["length"].to_f.zero?
-          puts "Updating depth/length, was #{product_info[:depth]}, will be #{product_hash[1]["length"]}"
-          if update.is_a?(Hash) && ! updated
-            updated_products += 1
-            updated = true
-          end
-        end
-        if product_info[:height].to_f.zero? || product_info[:height] != product_hash[1]["height"]
-          update = Prestashop::Mapper::Product.update(product_id, height: product_hash[1]["depth"]) if !product_hash[1]["depth"].to_f.zero?
-          puts "Updating width, was #{product_info[:height]}, will be #{product_hash[1]["height"]}"
-          if update.is_a?(Hash) && ! updated
-            updated_products += 1
-            updated = true
-          end
-        end
-        price_displayed = product_info[:show_price]
-        if price_displayed.zero?
-          # Prestashop::Mapper::Product.update(product_id, show_price: 1) 
-          puts "Price will now be displayed"
-        end
-      rescue NoMethodError
-      rescue Prestashop::Api::RequestFailed => e
-        mail = Mail.new do
-          from    'lesalfistes@gmail.com'
-          to      'contact@montpellier4x4.com'
-          cc 'lesalfistes@gmail.com '
-          subject "Erreur de modification de l'article #{product_id}"
+# def update_arb_products(products)
+#   csv_arb = CSV.read("arb.csv").map { |(ref, rrp, desc, gtin, brand, sub_brand, weight, width_cm, depth_cm, length_cm, retail, images, attributes)| [ref, gtin, weight, width_cm, depth_cm, length_cm] }
+#   available_references_json = JSON.parse(File.open("arb.json").read)
+#   updated_products = 0
+#   found_products = 0
+#   json_arb = Hash.new
+#   csv_arb.shift
+#   csv_arb.each do |product|
+#     json_arb[product[0]] = {"gtin": product[1], "weight": product[2], "width": product[3], "depth": product[4], "length": product[5] }
+#   end
+#   FileUtils.touch("arb.json")
+#   File.open("arb.json", "w+") do |file|
+#     file.write(JSON.dump(json_arb))
+#   end
+#   products = products.map{|p| p.to_s }
+#   products.each do |product|
+#     product_hash = available_references_json.find do |p| 
+#       p[0] == product 
+#     end
+#     if product_hash.nil?
+#       product_hash = available_references_json.find do |p| 
+#         p[0].sub!("ARB-","") == product rescue nil
+#       end
+#     end
+#     if product_hash.nil?
+#       puts "#{product} is not in our system, might have to consider creating it"
+#       next
+#     else
+#       puts "Found product #{product}"
+#     end
+#     # Get id
+#     product_id = Prestashop::Mapper::Product.find_by(filter: {reference: product})
+#     puts "PRODUCT REF IS: #{product}"
+#     if product_id
+#       found_products += 1
+#     end
+#     if product_id
+#       # Get product info
+#       product_info = Prestashop::Mapper::Product.find(product_id)
+#       updated = false
+#       begin 
+#         # Check price and update if different
+#         fr_price = product_hash["RetailPrice"].to_f 
+#         our_price = product_info[:price].to_f
+#         unless fr_price == our_price
+#           update = Prestashop::Mapper::Product.update(product_id, price: fr_price)
+#           updated = true
+#           updated_products += 1 if update.is_a?(Hash)
+#         end
+#         weight = product_info[:weight].to_f
+#         puts "PRODUCT WEIGHT IS: #{weight}"
+#         if weight.zero? || weight != product_hash[1]["weight"]
+#           new_weight = product_hash[1]["weight"].to_f
+#           puts "Weight was #{weight} and will now be #{new_weight}" unless product_hash[1]["weight"].to_f == 0
+#           update = Prestashop::Mapper::Product.update(product_id, weight: new_weight) unless product_hash[1]["weight"].to_f == 0
+#           if update.is_a?(Hash) && ! updated
+#             updated_products += 1
+#             updated = true
+#           end
+#         end
+#         if product_info[:ean13].empty? || product_info[:ean13] != product_hash[1]["gtin"]
+#           update = Prestashop::Mapper::Product.update(product_id, ean13: product_hash[1]["gtin"]) if !product_hash[1]["gtin"].empty?
+#           puts "Updated EAN info: was #{product_info[:ean13]}, will be #{product_hash[1]["gtin"]}"
+#           if update.is_a?(Hash) && ! updated
+#             updated_products += 1
+#             updated = true
+#           end
+#           puts "Updated EAN13"
+#         end
+#         if product_info[:width].to_f.zero? || product_info[:width] != product_hash[1]["width"]
+#           update = Prestashop::Mapper::Product.update(product_id, width: product_hash[1]["width"]) if !product_hash[1]["width"].to_f.zero?
+#           puts "Updating width, was #{product_info[:width]}, will be #{product_hash[1]["width"]}"
+#           if update.is_a?(Hash) && ! updated
+#             updated_products += 1
+#             updated = true
+#           end
+#         end
+#         if product_info[:depth].to_f.zero? || product_info[:length] != product_hash[1]["length"]
+#           update = Prestashop::Mapper::Product.update(product_id, depth: product_hash[1]["length"]) if !product_hash[1]["length"].to_f.zero?
+#           puts "Updating depth/length, was #{product_info[:depth]}, will be #{product_hash[1]["length"]}"
+#           if update.is_a?(Hash) && ! updated
+#             updated_products += 1
+#             updated = true
+#           end
+#         end
+#         if product_info[:height].to_f.zero? || product_info[:height] != product_hash[1]["height"]
+#           update = Prestashop::Mapper::Product.update(product_id, height: product_hash[1]["depth"]) if !product_hash[1]["depth"].to_f.zero?
+#           puts "Updating width, was #{product_info[:height]}, will be #{product_hash[1]["height"]}"
+#           if update.is_a?(Hash) && ! updated
+#             updated_products += 1
+#             updated = true
+#           end
+#         end
+#         price_displayed = product_info[:show_price]
+#         if price_displayed.zero?
+#           # Prestashop::Mapper::Product.update(product_id, show_price: 1) 
+#           puts "Price will now be displayed"
+#         end
+#       rescue NoMethodError
+#       rescue Prestashop::Api::RequestFailed => e
+#         mail = Mail.new do
+#           from    'lesalfistes@gmail.com'
+#           to      'contact@montpellier4x4.com'
+#           cc 'lesalfistes@gmail.com '
+#           subject "Erreur de modification de l'article #{product_id}"
         
-          text_part do
-            body "Erreur de suppression: #{e.message}"
-          end
+#           text_part do
+#             body "Erreur de suppression: #{e.message}"
+#           end
         
-          html_part do
-            content_type 'text/html; charset=UTF-8'
-            body "<h2>L'article #{product_id} n'a pas pu être modifié, voici le détail:</h2><p>#{e.message}</p>"
-          end
-        end
-        mail.deliver!
-      end
-    end
-  end
-  if updated_products > 1
-    mail = Mail.new do
-      from    'lesalfistes@gmail.com'
-      to      'tom@montpellier4x4.com'
-      cc 'contact@montpellier4x4.com'
-      subject "MAJ ARB: #{updated_products} produits modifiés"
+#           html_part do
+#             content_type 'text/html; charset=UTF-8'
+#             body "<h2>L'article #{product_id} n'a pas pu être modifié, voici le détail:</h2><p>#{e.message}</p>"
+#           end
+#         end
+#         mail.deliver!
+#       end
+#     end
+#   end
+#   if updated_products > 1
+#     mail = Mail.new do
+#       from    'lesalfistes@gmail.com'
+#       to      'tom@montpellier4x4.com'
+#       cc 'contact@montpellier4x4.com'
+#       subject "MAJ ARB: #{updated_products} produits modifiés"
     
-      text_part do
-        body "#{updated_products} articles du catalogue ARB ont été modifiés"
-      end
+#       text_part do
+#         body "#{updated_products} articles du catalogue ARB ont été modifiés"
+#       end
     
-      html_part do
-        content_type 'text/html; charset=UTF-8'
-        body "<p>#{updated_products} articles du catalogue ARB ont été modifiés.
-          Code GTIN/EAN13/Marque ajouté(e) et ou dimensions (poids compris) modifié(e)s<p>"
-      end
-    end
-    mail.deliver!
-  end
-end
+#       html_part do
+#         content_type 'text/html; charset=UTF-8'
+#         body "<p>#{updated_products} articles du catalogue ARB ont été modifiés.
+#           Code GTIN/EAN13/Marque ajouté(e) et ou dimensions (poids compris) modifié(e)s<p>"
+#       end
+#     end
+#     mail.deliver!
+#   end
+# end
 
 def create_b2b_categories
   # Create
@@ -866,6 +868,7 @@ def create_b2b_categories
 end
 
 begin
+  binding.irb
   [their_fr].each { |products| update_front_runner_products(products)}
   if Date.today.day == 24
     [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
@@ -884,11 +887,11 @@ rescue StandardError => e
     "text": e.message
   })
 ensure
-  [Dir["*.csv"], Dir["*.json"]].flatten.each do|f| 
-    unless f == "refs-a-garder-front-runner.csv"
-      FileUtils.rm(f)
-    end
-  end
+  # [Dir["*.csv"], Dir["*.json"]].flatten.each do|f| 
+  #   unless f == "refs-a-garder-front-runner.csv"
+  #     FileUtils.rm(f)
+  #   end
+  # end
 end
 
 # [new_dometic].each { |products| create_front_runner_products(products, nil, true) }
